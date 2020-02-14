@@ -151,14 +151,13 @@ void sort_list()
     }
 }
 
-//global variables for thread sync
-uint8_t threadsReady = 0;
-uint8_t readyThread1 = 0, readyThread2 = 0, readyThread3 = 0;
+//global barrier for thread sync
+pthread_barrier_t barrier;
+
 
 void * thread1()
 {
-    readyThread1 = 1;
-    while(threadsReady == 0);
+    pthread_barrier_wait(&barrier);
     printf("\nThread %lu STARTED", pthread_self());
     printf("\nThread %lu: add(2)", pthread_self());
     add(2);
@@ -173,13 +172,11 @@ void * thread1()
     printf("\nThread %lu: delete(5)", pthread_self());
     delete(5);
     printf("\nThread %lu FINISHED", pthread_self());
-    readyThread1 = 1;
 }
 
 void * thread2()
 {
-    readyThread2 = 1;
-    while(threadsReady == 0);
+    pthread_barrier_wait(&barrier);
     printf("\nThread %lu STARTED", pthread_self());
     printf("\nThread %lu: add(11)", pthread_self());
     add(11);
@@ -192,13 +189,11 @@ void * thread2()
     printf("\nThread %lu: print_list()", pthread_self());
     print_list();
     printf("\nThread %lu FINISHED", pthread_self());
-    readyThread2 = 1;
 }
 
 void * thread3()
 {
-    readyThread3 = 1;
-    while(threadsReady == 0);
+    pthread_barrier_wait(&barrier);
     printf("\nThread %lu STARTED", pthread_self());
     printf("\nThread %lu: add(30)", pthread_self());
     add(30);
@@ -213,27 +208,18 @@ void * thread3()
     printf("\nThread %lu: delete(100)", pthread_self());
     delete(100);
     printf("\nThread %lu FINISHED", pthread_self());
-    readyThread3 = 1;
 }
+
 
 int main(void)
 {
     pthread_t t1, t2, t3;
-    threadsReady = 0;
+    //start the threads all at once
+    pthread_barrier_init(&barrier, NULL, 3);
     pthread_create(&t1, NULL, &thread1, NULL);
     pthread_create(&t2, NULL, &thread2, NULL);
     pthread_create(&t3, NULL, &thread3, NULL);
-    printf("Threads created, waiting for initialization...");
-
-    //wait until the threads are loaded, then start them
-    while(!readyThread1 || !readyThread2 || !readyThread3)
-    {
-        ;
-    }
-    printf("done.\n");
-
-    //start the threads
-    threadsReady = 1;
+    printf("Threads created");
 
     //wait for the threads to do their thing
     pthread_join(t1, NULL); 
