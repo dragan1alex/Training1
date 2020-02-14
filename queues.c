@@ -14,6 +14,7 @@ typedef struct node
 
 Node* head = NULL;
 
+
 void print(int);
 void add(int);
 void print_list();
@@ -27,11 +28,13 @@ void* thread2();
 void* thread3();
 
 
+//for debug purposes, prints on a new line
 void print(int n)
 {
     printf("%d ", n);
 }
 
+//add x to the list
 void add(int x)
 {
     Node* n = malloc(sizeof(Node));
@@ -56,6 +59,7 @@ void add(int x)
     return;
 }
 
+//prints the list
 void print_list()
 {
     Node * nav = head;
@@ -67,8 +71,7 @@ void print_list()
     }
 }
 
-
-
+//deletes the node that has the value x
 void delete(int x)
 {
     if(head == NULL)
@@ -91,15 +94,17 @@ void delete(int x)
         }
         
     }
-    
+    //navigate through the list to find waldo
     Node * nav = head;
     while (nav->next && nav->next->val != x)
     {
         nav = nav->next;
     }
-        if(nav->next == NULL || nav->next->val != x)
-            return; //element not found
-            
+    if(nav->next == NULL || nav->next->val != x)
+    {
+        return; //element not found  
+    }
+    //if we got this far we found waldo
     //new pointer to keep the memory address to be freed
     Node * t = nav->next;
     nav->next = nav->next->next;
@@ -107,8 +112,10 @@ void delete(int x)
     return;
 }
 
+//delete the whole list starting with n
 void flush_list(Node * n)
 {
+    //recursively free all the elements from the end to the beginning
     if(n->next)
         flush_list(n->next);
     Node * t = n;
@@ -237,6 +244,6 @@ int main(void)
     
     //finally, free the memory allocated for the queue
     flush_list(head);
-    printf("\n\n");
+    printf("\n\nList deleted\n\n");
     return 0;
 }
