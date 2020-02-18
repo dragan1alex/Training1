@@ -13,14 +13,15 @@ typedef struct node
 }Node;
 
 Node* head = NULL;
+pthread_barrier_t barrier;  /*global barrier for thread sync*/
+pthread_mutex_t queueMutex; /*mutex used to make the queue operations thread-safe*/
 
-
-void print(int);
-void add(int);
+void print(int n);
+void add(int x);
 void print_list();
-void delete(int);
-void flush_list(Node*);
-void swap(Node*, Node*);
+void delete(int x);
+void flush_list(Node* n);
+void swap(Node* a, Node* b);
 void sort_list();
 
 void* thread1();
@@ -28,13 +29,13 @@ void* thread2();
 void* thread3();
 
 
-//for debug purposes, prints on a new line
+/*for debug purposes, prints on a new line*/
 void print(int n)
 {
     printf("%d ", n);
 }
 
-//add x to the list
+/*add x to the list*/
 void add(int x)
 {
     Node* n = malloc(sizeof(Node));
@@ -49,7 +50,7 @@ void add(int x)
         return;
     }
 
-    //we need a pointer to navigate through the list
+    /*we need a pointer to navigate through the list*/
     Node * nav = head;
     while(nav->next)
     {
@@ -59,7 +60,7 @@ void add(int x)
     return;
 }
 
-//prints the list
+/*prints the list*/
 void print_list()
 {
     Node * nav = head;
@@ -71,12 +72,12 @@ void print_list()
     }
 }
 
-//deletes the node that has the value x
+/*deletes the node that has the value x */
 void delete(int x)
 {
     if(head == NULL)
-        return; //the list is empty, nothing to do
-    //check if the value is in the first element of the list
+        return; /*the list is empty, nothing to do */
+    /*check if the value is in the first element of the list */
     if(head->val == x)
     {
         if(head->next != NULL)
@@ -94,7 +95,7 @@ void delete(int x)
         }
         
     }
-    //navigate through the list to find waldo
+    /*navigate through the list to find waldo */
     Node * nav = head;
     while (nav->next && nav->next->val != x)
     {
@@ -102,20 +103,20 @@ void delete(int x)
     }
     if(nav->next == NULL || nav->next->val != x)
     {
-        return; //element not found  
+        return; /*element not found  */
     }
-    //if we got this far we found waldo
-    //new pointer to keep the memory address to be freed
+    /*if we got this far we found waldo */
+    /*new pointer to keep the memory address to be freed */
     Node * t = nav->next;
     nav->next = nav->next->next;
     free(t);
     return;
 }
 
-//delete the whole list starting with n
+/*delete the whole list starting with n */
 void flush_list(Node * n)
 {
-    //recursively free all the elements from the end to the beginning
+    /*recursively free all the elements from the end to the beginning */
     if(n->next)
         flush_list(n->next);
     Node * t = n;
@@ -125,7 +126,7 @@ void flush_list(Node * n)
 
 void swap(Node * a, Node * b)
 {
-    //we don't actually need to swap the whole nodes, just the data
+    /*we don't actually need to swap the whole nodes, just the data */
     int temp = a->val;
     a->val = b->val;
     b->val = temp;
@@ -133,9 +134,9 @@ void swap(Node * a, Node * b)
 
 void sort_list()
 {
-    //bubble sort
-    Node * thead = head; //temporary head for navigation
-    Node * nav;          //compare index
+    /*bubble sort */
+    Node * thead = head; /*temporary head for navigation */
+    Node * nav;          /*compare index                 */
     while(thead != NULL)
     {
         nav = thead->next;
@@ -151,26 +152,41 @@ void sort_list()
     }
 }
 
-//global barrier for thread sync
-pthread_barrier_t barrier;
-
-
 void * thread1()
 {
     pthread_barrier_wait(&barrier);
     printf("\nThread %lu STARTED", pthread_self());
+
     printf("\nThread %lu: add(2)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     add(2);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: add(4)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     add(4);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: delete(2)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     delete(2);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: sort_list()", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     sort_list();
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: delete(10)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     delete(10);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: delete(5)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     delete(5);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu FINISHED", pthread_self());
 }
 
@@ -178,16 +194,32 @@ void * thread2()
 {
     pthread_barrier_wait(&barrier);
     printf("\nThread %lu STARTED", pthread_self());
+
     printf("\nThread %lu: add(11)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     add(11);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: add(1)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     add(1);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: delete(11)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     delete(11);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: add(8)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     add(8);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: print_list()", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     print_list();
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu FINISHED", pthread_self());
 }
 
@@ -195,18 +227,37 @@ void * thread3()
 {
     pthread_barrier_wait(&barrier);
     printf("\nThread %lu STARTED", pthread_self());
+
     printf("\nThread %lu: add(30)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     add(30);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: add(25)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     add(25);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: add(100)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     add(100);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: sort_list()", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     sort_list();
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: print_list()", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     print_list();
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu: delete(100)", pthread_self());
+    pthread_mutex_lock(&queueMutex);
     delete(100);
+    pthread_mutex_unlock(&queueMutex);
+
     printf("\nThread %lu FINISHED", pthread_self());
 }
 
@@ -214,21 +265,22 @@ void * thread3()
 int main(void)
 {
     pthread_t t1, t2, t3;
-    //start the threads all at once
+    /*start the threads all at once */
     pthread_barrier_init(&barrier, NULL, 3);
+    pthread_mutex_init(&queueMutex, NULL);
     pthread_create(&t1, NULL, &thread1, NULL);
     pthread_create(&t2, NULL, &thread2, NULL);
     pthread_create(&t3, NULL, &thread3, NULL);
     printf("Threads created");
 
-    //wait for the threads to do their thing
+    /*wait for the threads to do their thing */
     pthread_join(t1, NULL); 
     pthread_join(t2, NULL); 
     pthread_join(t3, NULL);
     printf("\n\nThreads done executing, here's the final list:");
     print_list();
     
-    //finally, free the memory allocated for the queue
+    /*finally, free the memory allocated for the queue */
     flush_list(head);
     printf("\n\nList deleted\n\n");
     return 0;
